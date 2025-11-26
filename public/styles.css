@@ -1,0 +1,171 @@
+:root {
+    --primary-color: #FF5722; /* Vibrant Orange for food app vibe */
+    --primary-dark: #E64A19;
+    --secondary-color: #2196F3;
+    --success-color: #4CAF50;
+    --warning-color: #FFC107;
+    --danger-color: #F44336;
+    --dark-bg: #121212;
+    --card-bg: #1E1E1E;
+    --text-color: #E0E0E0;
+    --text-muted: #B0B0B0;
+    --border-color: #333;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --radius: 8px;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+/* Layout */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.grid {
+    display: grid;
+    gap: 20px;
+}
+
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+/* Components */
+.card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background 0.2s;
+    text-align: center;
+}
+
+.btn-primary { background-color: var(--primary-color); color: white; }
+.btn-primary:hover { background-color: var(--primary-dark); }
+.btn-secondary { background-color: var(--secondary-color); color: white; }
+.btn-success { background-color: var(--success-color); color: white; }
+.btn-danger { background-color: var(--danger-color); color: white; }
+.btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); }
+
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; color: var(--text-muted); }
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    background-color: #2C2C2C;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    color: white;
+    font-size: 1rem;
+}
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--card-bg);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.nav-brand { font-size: 1.5rem; font-weight: bold; color: var(--primary-color); }
+.nav-links { display: flex; gap: 20px; }
+.nav-link { color: var(--text-muted); font-weight: 500; }
+.nav-link:hover, .nav-link.active { color: var(--primary-color); }
+
+/* Utilities */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 10px; }
+.mt-2 { margin-top: 20px; }
+.mb-1 { margin-bottom: 10px; }
+.mb-2 { margin-bottom: 20px; }
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.gap-1 { gap: 10px; }
+
+/* Status Badges */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.badge-success { background-color: rgba(76, 175, 80, 0.2); color: var(--success-color); }
+.badge-warning { background-color: rgba(255, 193, 7, 0.2); color: var(--warning-color); }
+.badge-danger { background-color: rgba(244, 67, 54, 0.2); color: var(--danger-color); }
+.badge-info { background-color: rgba(33, 150, 243, 0.2); color: var(--secondary-color); }
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal.active { display: flex; }
+.modal-content {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+}
+.close-modal {
+    position: absolute;
+    top: 15px; right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* Login Page Specific */
+.login-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #121212 0%, #2d1b1b 100%);
+}
+.login-box {
+    width: 100%;
+    max-width: 400px;
+}

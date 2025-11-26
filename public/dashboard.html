@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Chai-Pani</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">Chai-Pani</div>
+        <div class="nav-links">
+            <span id="user-display" class="nav-link"></span>
+            <a href="#" onclick="logout()" class="nav-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="mb-2">Dashboard</h1>
+
+        <div class="grid grid-3">
+            <a href="menu.html" class="card text-center" style="text-decoration: none; color: inherit;">
+                <h2 style="color: var(--primary-color);">Menu</h2>
+                <p class="text-muted mt-1">Manage food items and categories</p>
+            </a>
+
+            <a href="tables.html" class="card text-center" style="text-decoration: none; color: inherit;">
+                <h2 style="color: var(--secondary-color);">Tables</h2>
+                <p class="text-muted mt-1">View layout and manage seating</p>
+            </a>
+
+            <a href="orders.html" class="card text-center" style="text-decoration: none; color: inherit;">
+                <h2 style="color: var(--success-color);">Orders</h2>
+                <p class="text-muted mt-1">Take orders and view history</p>
+            </a>
+
+            <a href="kitchen.html" class="card text-center" style="text-decoration: none; color: inherit;">
+                <h2 style="color: var(--warning-color);">Kitchen (KDS)</h2>
+                <p class="text-muted mt-1">View and process active orders</p>
+            </a>
+
+            <a href="inventory.html" class="card text-center" style="text-decoration: none; color: inherit;">
+                <h2 style="color: var(--danger-color);">Inventory</h2>
+                <p class="text-muted mt-1">Track stock and suppliers</p>
+            </a>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+    </script>
+</body>
+
+</html>

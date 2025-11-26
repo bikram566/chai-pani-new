@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tables - Chai-Pani</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .table-card {
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .table-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .status-available {
+            border-top: 5px solid var(--success-color);
+        }
+
+        .status-occupied {
+            border-top: 5px solid var(--danger-color);
+        }
+
+        .status-reserved {
+            border-top: 5px solid var(--warning-color);
+        }
+
+        .table-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .table-capacity {
+            color: var(--text-muted);
+        }
+
+        .table-status {
+            position: absolute;
+            bottom: 10px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><a href="dashboard.html">Chai-Pani</a> / Tables</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="#" onclick="logout()" class="nav-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-2">
+            <h1>Tables</h1>
+            <button class="btn btn-primary" onclick="openModal()" data-role="admin,manager">Add Table</button>
+        </div>
+
+        <div class="grid grid-4" id="tables-grid">
+            <!-- Tables loaded here -->
+        </div>
+    </div>
+
+    <!-- Add Table Modal -->
+    <div id="table-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 class="mb-2">Add Table</h2>
+            <form id="table-form">
+                <div class="form-group">
+                    <label>Table Number/Name</label>
+                    <input type="text" id="table-number" required>
+                </div>
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input type="number" id="table-capacity" required min="1">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Table</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadTables();
+        });
+
+        async function loadTables() {
+            const response = await fetchAPI('/tables/');
+            if (!response) return;
+
+            const tables = await response.json();
+            const grid = document.getElementById('tables-grid');
+            grid.innerHTML = '';
+
+            tables.forEach(table => {
+                const card = document.createElement('div');
+                card.className = `card table-card status-${table.status}`;
+                card.onclick = () => window.location.href = `orders.html?table=${table.id}`;
+
+                let statusColor = 'var(--success-color)';
+                if (table.status === 'occupied') statusColor = 'var(--danger-color)';
+                if (table.status === 'reserved') statusColor = 'var(--warning-color)';
+
+                card.innerHTML = `
+                    <div class="table-number">${table.table_number}</div>
+                    <div class="table-capacity">${table.capacity} Seats</div>
+                    <div class="table-status" style="color: ${statusColor}">${table.status}</div>
+                `;
+                grid.appendChild(card);
+            });
+
+            updateUIForUser();
+        }
+
+        function openModal() {
+            document.getElementById('table-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('table-modal').classList.remove('active');
+        }
+
+        document.getElementById('table-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                table_number: document.getElementById('table-number').value,
+                capacity: parseInt(document.getElementById('table-capacity').value)
+            };
+
+            const response = await fetchAPI('/tables/', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            if (response && response.ok) {
+                closeModal();
+                loadTables();
+                document.getElementById('table-form').reset();
+            } else {
+                alert('Failed to create table');
+            }
+        });
+    </script>
+</body>
+
+</html>

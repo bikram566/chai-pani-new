@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - Chai-Pani</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><a href="dashboard.html">Chai-Pani</a> / Inventory</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="#" onclick="logout()" class="nav-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-2">
+            <h1>Inventory</h1>
+            <button class="btn btn-primary" onclick="openModal()" data-role="admin,manager">Add Item</button>
+        </div>
+
+        <div class="card" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <th style="padding: 15px;">Item Name</th>
+                        <th style="padding: 15px;">Quantity</th>
+                        <th style="padding: 15px;">Unit</th>
+                        <th style="padding: 15px;">Supplier</th>
+                        <th style="padding: 15px;">Status</th>
+                        <th style="padding: 15px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-list">
+                    <!-- Items loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="inv-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title" class="mb-2">Add Inventory Item</h2>
+            <form id="inv-form">
+                <input type="hidden" id="inv-id">
+                <div class="form-group">
+                    <label>Item Name</label>
+                    <input type="text" id="inv-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="inv-qty" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" id="inv-unit" placeholder="kg, liters, pcs" required>
+                </div>
+                <div class="form-group">
+                    <label>Low Stock Threshold</label>
+                    <input type="number" id="inv-threshold" step="0.01" value="10">
+                </div>
+                <div class="form-group">
+                    <label>Supplier</label>
+                    <input type="text" id="inv-supplier">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadInventory();
+        });
+
+        async function loadInventory() {
+            const response = await fetchAPI('/inventory/');
+            if (!response) return;
+
+            const items = await response.json();
+            const tbody = document.getElementById('inventory-list');
+            tbody.innerHTML = '';
+
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #333';
+
+                const isLow = item.quantity <= item.low_stock_threshold;
+                const statusBadge = isLow
+                    ? '<span class="badge badge-danger">Low Stock</span>'
+                    : '<span class="badge badge-success">In Stock</span>';
+
+                tr.innerHTML = `
+                    <td style="padding: 15px;">${item.item_name}</td>
+                    <td style="padding: 15px;">${item.quantity}</td>
+                    <td style="padding: 15px;">${item.unit}</td>
+                    <td style="padding: 15px;">${item.supplier || '-'}</td>
+                    <td style="padding: 15px;">${statusBadge}</td>
+                    <td style="padding: 15px;">
+                        <button class="btn btn-outline" style="padding: 5px 10px;" onclick='editItem(${JSON.stringify(item)})'>Edit</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateUIForUser();
+        }
+
+        function openModal(item = null) {
+            const modal = document.getElementById('inv-modal');
+            const title = document.getElementById('modal-title');
+            const form = document.getElementById('inv-form');
+
+            if (item) {
+                title.textContent = 'Edit Inventory Item';
+                document.getElementById('inv-id').value = item.id;
+                document.getElementById('inv-name').value = item.item_name;
+                document.getElementById('inv-qty').value = item.quantity;
+                document.getElementById('inv-unit').value = item.unit;
+                document.getElementById('inv-threshold').value = item.low_stock_threshold;
+                document.getElementById('inv-supplier').value = item.supplier || '';
+            } else {
+                title.textContent = 'Add Inventory Item';
+                form.reset();
+                document.getElementById('inv-id').value = '';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('inv-modal').classList.remove('active');
+        }
+
+        function editItem(item) {
+            openModal(item);
+        }
+
+        document.getElementById('inv-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('inv-id').value;
+            const data = {
+                item_name: document.getElementById('inv-name').value,
+                quantity: parseFloat(document.getElementById('inv-qty').value),
+                unit: document.getElementById('inv-unit').value,
+                low_stock_threshold: parseFloat(document.getElementById('inv-threshold').value),
+                supplier: document.getElementById('inv-supplier').value
+            };
+
+            let response;
+            if (id) {
+                response = await fetchAPI(`/inventory/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                });
+            } else {
+                response = await fetchAPI('/inventory/', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+            }
+
+            if (response && response.ok) {
+                closeModal();
+                loadInventory();
+            } else {
+                alert('Failed to save item');
+            }
+        });
+    </script>
+</body>
+
+</html>

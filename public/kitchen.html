@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen Display - Chai-Pani</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .kot-card {
+            border-left: 5px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .kot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .kot-items {
+            margin-bottom: 15px;
+        }
+
+        .kot-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .kot-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-preparing {
+            border-left-color: var(--warning-color);
+        }
+
+        .status-ready {
+            border-left-color: var(--success-color);
+        }
+
+        /* Animation for new orders */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .new-kot {
+            animation: slideIn 0.5s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><a href="dashboard.html">Chai-Pani</a> / Kitchen Display</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="#" onclick="logout()" class="nav-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="flex justify-between items-center mb-2">
+            <h1>Active Orders</h1>
+            <div class="flex items-center gap-1">
+                <span class="badge badge-success" id="connection-status">Live</span>
+            </div>
+        </div>
+
+        <div class="grid grid-3" id="kot-grid">
+            <!-- KOTs loaded here -->
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadActiveKOTs();
+            setupSSE();
+        });
+
+        async function loadActiveKOTs() {
+            const response = await fetchAPI('/kds/active');
+            if (!response) return;
+
+            const kots = await response.json();
+            const grid = document.getElementById('kot-grid');
+            grid.innerHTML = '';
+
+            kots.forEach(kot => renderKOT(kot));
+        }
+
+        function renderKOT(kot) {
+            const grid = document.getElementById('kot-grid');
+
+            // Check if already exists
+            const existing = document.getElementById(`kot-${kot.id}`);
+            if (existing) {
+                // Update status if changed, or remove if completed
+                if (kot.status === 'completed') {
+                    existing.remove();
+                } else {
+                    // Update content/class
+                    existing.className = `card kot-card status-${kot.status}`;
+                    // Re-render content (simplified)
+                    existing.innerHTML = getKOTHTML(kot);
+                }
+                return;
+            }
+
+            if (kot.status === 'completed') return;
+
+            const card = document.createElement('div');
+            card.id = `kot-${kot.id}`;
+            card.className = `card kot-card status-${kot.status} new-kot`;
+            card.innerHTML = getKOTHTML(kot);
+            grid.appendChild(card);
+        }
+
+        function getKOTHTML(kot) {
+            const time = new Date(kot.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let itemsHtml = '';
+            kot.items.forEach(item => {
+                itemsHtml += `
+                    <div class="kot-item">
+                        <span style="font-weight: bold;">${item.quantity}x ${item.name}</span>
+                    </div>
+                `;
+            });
+
+            let actionBtn = '';
+            if (kot.status === 'pending') {
+                actionBtn = `<button class="btn btn-primary" style="flex: 1;" onclick="updateStatus(${kot.id}, 'preparing')">Start Preparing</button>`;
+            } else if (kot.status === 'preparing') {
+                actionBtn = `<button class="btn btn-success" style="flex: 1;" onclick="updateStatus(${kot.id}, 'ready')">Mark Ready</button>`;
+            } else if (kot.status === 'ready') {
+                actionBtn = `<button class="btn btn-secondary" style="flex: 1;" onclick="updateStatus(${kot.id}, 'completed')">Complete</button>`;
+            }
+
+            return `
+                <div class="kot-header">
+                    <span style="font-weight: bold; font-size: 1.2rem;">Table ${kot.table_number}</span>
+                    <span class="text-muted">${time}</span>
+                </div>
+                <div class="kot-items">
+                    ${itemsHtml}
+                </div>
+                <div class="kot-actions">
+                    ${actionBtn}
+                </div>
+            `;
+        }
+
+        async function updateStatus(id, status) {
+            const response = await fetchAPI(`/kot/${id}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status })
+            });
+
+            if (response && response.ok) {
+                loadActiveKOTs(); // Refresh to be sure
+            }
+        }
+
+        function setupSSE() {
+            const evtSource = new EventSource(`${API_URL}/kds/stream`);
+
+            evtSource.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                // In a real app, we'd handle specific events. 
+                // For MVP, if we get any message, we just reload active KOTs
+                // Or if the message contains the KOT object, we render it.
+                // Our backend currently just sends what we broadcast.
+                // Let's assume we just reload for simplicity if message is generic, 
+                // or render if it's a KOT.
+                loadActiveKOTs();
+            };
+
+            evtSource.onerror = function () {
+                document.getElementById('connection-status').className = 'badge badge-danger';
+                document.getElementById('connection-status').textContent = 'Offline';
+            };
+
+            evtSource.onopen = function () {
+                document.getElementById('connection-status').className = 'badge badge-success';
+                document.getElementById('connection-status').textContent = 'Live';
+            };
+        }
+    </script>
+</body>
+
+</html>

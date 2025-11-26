@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Chai-Pani</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .menu-item-card {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-item-card:hover {
+            background-color: #2a2a2a;
+        }
+
+        .cart-panel {
+            position: sticky;
+            top: 20px;
+            height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><a href="dashboard.html">Chai-Pani</a> / Orders</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="#" onclick="logout()" class="nav-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <!-- Menu Section -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h1>Menu</h1>
+                    <select id="category-filter" onchange="filterMenu()" style="width: 200px;">
+                        <option value="">All Categories</option>
+                        <!-- Categories populated via JS -->
+                    </select>
+                </div>
+
+                <div class="grid grid-3" id="menu-grid">
+                    <!-- Menu items loaded here -->
+                </div>
+            </div>
+
+            <!-- Cart/Order Section -->
+            <div class="card cart-panel">
+                <h2 class="mb-2">Current Order</h2>
+
+                <div class="form-group">
+                    <label>Table</label>
+                    <select id="table-select">
+                        <option value="">Select Table</option>
+                        <!-- Tables populated via JS -->
+                    </select>
+                </div>
+
+                <div class="cart-items" id="cart-items">
+                    <p class="text-muted text-center mt-2">Cart is empty</p>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <div class="flex justify-between mb-1">
+                        <span>Total:</span>
+                        <span id="cart-total" style="font-weight: bold; font-size: 1.2rem;">₹0.00</span>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="placeOrder()">Place Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let menuItems = [];
+        let cart = [];
+        let tables = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await Promise.all([loadMenu(), loadTables()]);
+
+            // Check URL params for table
+            const urlParams = new URLSearchParams(window.location.search);
+            const tableId = urlParams.get('table');
+            if (tableId) {
+                document.getElementById('table-select').value = tableId;
+            }
+        });
+
+        async function loadMenu() {
+            const response = await fetchAPI('/menu/?available_only=true');
+            if (!response) return;
+            menuItems = await response.json();
+            renderMenu(menuItems);
+
+            // Populate categories
+            const categories = [...new Set(menuItems.map(item => item.category))];
+            const filter = document.getElementById('category-filter');
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                filter.appendChild(opt);
+            });
+        }
+
+        function renderMenu(items) {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = '';
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card menu-item-card';
+                card.onclick = () => addToCart(item);
+                card.innerHTML = `
+                    <h3 style="color: var(--primary-color);">${item.name}</h3>
+                    <p class="text-muted" style="font-size: 0.9rem;">${item.category}</p>
+                    <div class="flex justify-between mt-1">
+                        <span style="font-weight: bold;">${formatCurrency(item.price)}</span>
+                        <span style="color: var(--success-color);">+ Add</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterMenu() {
+            const cat = document.getElementById('category-filter').value;
+            if (cat) {
+                renderMenu(menuItems.filter(i => i.category === cat));
+            } else {
+                renderMenu(menuItems);
+            }
+        }
+
+        async function loadTables() {
+            const response = await fetchAPI('/tables/');
+            if (!response) return;
+            tables = await response.json();
+
+            const select = document.getElementById('table-select');
+            tables.forEach(table => {
+                const opt = document.createElement('option');
+                opt.value = table.id;
+                opt.textContent = `${table.table_number} (${table.capacity} seats) - ${table.status}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function addToCart(item) {
+            const existing = cart.find(i => i.id === item.id);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push({ ...item, quantity: 1 });
+            }
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        function updateQuantity(index, delta) {
+            cart[index].quantity += delta;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center mt-2">Cart is empty</p>';
+                document.getElementById('cart-total').textContent = formatCurrency(0);
+                return;
+            }
+
+            container.innerHTML = '';
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight: bold;">${item.name}</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">${formatCurrency(item.price)} x ${item.quantity}</div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button class="btn btn-outline" style="padding: 2px 8px;" onclick="updateQuantity(${index}, -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="btn btn-outline" style="padding: 2px 8px;" onclick="updateQuantity(${index}, 1)">+</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('cart-total').textContent = formatCurrency(total);
+        }
+
+        async function placeOrder() {
+            if (cart.length === 0) return alert('Cart is empty');
+
+            const tableId = document.getElementById('table-select').value;
+            if (!tableId) return alert('Please select a table');
+
+            const orderData = {
+                table_id: parseInt(tableId),
+                items: cart.map(i => ({
+                    menu_item_id: i.id,
+                    name: i.name,
+                    quantity: i.quantity,
+                    price: i.price,
+                    notes: ''
+                })),
+                total_amount: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0)
+            };
+
+            const response = await fetchAPI('/orders/', {
+                method: 'POST',
+                body: JSON.stringify(orderData)
+            });
+
+            if (response && response.ok) {
+                alert('Order placed successfully!');
+                cart = [];
+                renderCart();
+                // Optionally redirect to dashboard or clear selection
+                window.location.href = 'dashboard.html';
+            } else {
+                alert('Failed to place order');
+            }
+        }
+    </script>
+</body>
+
+</html>
