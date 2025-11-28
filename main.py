@@ -15,7 +15,7 @@ app.add_middleware(
     allow_origins=["*"], # Allow all for MVP
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["http://localhsost:3000","https://chai-pani-new.onrender.com"],
 )
 
 # Include Routers
