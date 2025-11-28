@@ -2,7 +2,7 @@ import requests
 import json
 import sys
 
-BASE_URL = "http://localhost:8001"
+BASE_URL = "https://chai-pani-new.onrender.com"
 USERNAME = "admin"
 PASSWORD = "adminpassword"
 
