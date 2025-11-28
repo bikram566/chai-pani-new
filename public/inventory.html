@@ -9,37 +9,45 @@
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="nav-brand"><a href="dashboard.html">Chai-Pani</a> / Inventory</div>
-        <div class="nav-links">
-            <a href="dashboard.html" class="nav-link">Dashboard</a>
-            <a href="#" onclick="logout()" class="nav-link">Logout</a>
-        </div>
-    </nav>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">Chai-Pani</div>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="menu.html">Menu</a></li>
+                <li><a href="tables.html">Tables</a></li>
+                <li><a href="orders.html">Orders</a></li>
+                <li><a href="kitchen.html">Kitchen (KOT)</a></li>
+                <li><a href="inventory.html" class="active">Inventory</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
 
-    <div class="container">
-        <div class="flex justify-between items-center mb-2">
-            <h1>Inventory</h1>
-            <button class="btn btn-primary" onclick="openModal()" data-role="admin,manager">Add Item</button>
-        </div>
+        <main class="content">
+            <div class="flex justify-between items-center mb-2">
+                <h1>Inventory</h1>
+                <button class="btn btn-primary" onclick="openModal()" data-role="admin,manager">Add Item</button>
+            </div>
 
-        <div class="card" style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                <thead>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <th style="padding: 15px;">Item Name</th>
-                        <th style="padding: 15px;">Quantity</th>
-                        <th style="padding: 15px;">Unit</th>
-                        <th style="padding: 15px;">Supplier</th>
-                        <th style="padding: 15px;">Status</th>
-                        <th style="padding: 15px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="inventory-list">
-                    <!-- Items loaded here -->
-                </tbody>
-            </table>
-        </div>
+            <div class="card" style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <th style="padding: 15px;">Item Name</th>
+                            <th style="padding: 15px;">Quantity</th>
+                            <th style="padding: 15px;">Unit</th>
+                            <th style="padding: 15px;">Supplier</th>
+                            <th style="padding: 15px;">Status</th>
+                            <th style="padding: 15px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-list">
+                        <!-- Items loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
     </div>
 
     <!-- Add/Edit Modal -->

@@ -6,53 +6,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Chai-Pani</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            margin-top: 0;
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .top-items-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .top-item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .top-item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-rank {
+            font-weight: bold;
+            color: #888;
+            width: 30px;
+        }
+    </style>
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">Chai-Pani</div>
-        <div class="nav-links">
-            <span id="user-display" class="nav-link"></span>
-            <a href="#" onclick="logout()" class="nav-link">Logout</a>
-        </div>
-    </nav>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">Chai-Pani</div>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="menu.html">Menu</a></li>
+                <li><a href="tables.html">Tables</a></li>
+                <li><a href="orders.html">Orders</a></li>
+                <li><a href="kitchen.html">Kitchen (KOT)</a></li>
+                <li><a href="inventory.html">Inventory</a></li>
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
 
-    <div class="container">
-        <h1 class="mb-2">Dashboard</h1>
+        <main class="content">
+            <header>
+                <div class="flex justify-between items-center mb-2">
+                    <h1>Sales Dashboard</h1>
+                    <div class="flex items-center gap-1">
+                        <span id="refreshStatus" class="text-muted" style="font-size: 0.9em;"></span>
+                        <button class="btn btn-outline" onclick="refreshDashboard()" style="margin-left: 10px;">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+                <div id="userInfo"></div>
+            </header>
 
-        <div class="grid grid-3">
-            <a href="menu.html" class="card text-center" style="text-decoration: none; color: inherit;">
-                <h2 style="color: var(--primary-color);">Menu</h2>
-                <p class="text-muted mt-1">Manage food items and categories</p>
-            </a>
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <h3>Today's Revenue</h3>
+                    <div class="value" id="todayRevenue">₹0.00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Orders Today</h3>
+                    <div class="value" id="todayOrders">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>This Week</h3>
+                    <div class="value" id="weekRevenue">₹0.00</div>
+                </div>
+                <div class="stat-card">
+                    <h3>This Month</h3>
+                    <div class="value" id="monthRevenue">₹0.00</div>
+                </div>
+            </div>
 
-            <a href="tables.html" class="card text-center" style="text-decoration: none; color: inherit;">
-                <h2 style="color: var(--secondary-color);">Tables</h2>
-                <p class="text-muted mt-1">View layout and manage seating</p>
-            </a>
+            <div style="margin-bottom: 30px; text-align: center;">
+                <button class="btn btn-primary" onclick="downloadDailyReport()"
+                    style="padding: 12px 24px; font-size: 1rem;">
+                    📊 Download Today's Sales Report (CSV)
+                </button>
+            </div>
 
-            <a href="orders.html" class="card text-center" style="text-decoration: none; color: inherit;">
-                <h2 style="color: var(--success-color);">Orders</h2>
-                <p class="text-muted mt-1">Take orders and view history</p>
-            </a>
-
-            <a href="kitchen.html" class="card text-center" style="text-decoration: none; color: inherit;">
-                <h2 style="color: var(--warning-color);">Kitchen (KDS)</h2>
-                <p class="text-muted mt-1">View and process active orders</p>
-            </a>
-
-            <a href="inventory.html" class="card text-center" style="text-decoration: none; color: inherit;">
-                <h2 style="color: var(--danger-color);">Inventory</h2>
-                <p class="text-muted mt-1">Track stock and suppliers</p>
-            </a>
-        </div>
+            <div class="top-items-section">
+                <h2>High Demand Items</h2>
+                <div id="topItemsList">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+        </main>
     </div>
-
     <script src="app.js"></script>
+    <script src="js/dashboard.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-        });
+        // Download function defined inline to ensure it's globally accessible
+        async function downloadDailyReport() {
+            try {
+                if (typeof updateRefreshStatus === 'function') {
+                    updateRefreshStatus('Preparing download...');
+                }
+
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert('Please log in first');
+                    return;
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+                console.log('Fetching report for date:', today);
+
+                const response = await fetch(`/api/sales/daily-report?date=${today}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Download failed:', errorText);
+                    throw new Error(`Failed to download report: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                console.log('Received blob, size:', blob.size);
+
+                if (blob.size === 0) {
+                    throw new Error('Received empty file');
+                }
+
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sales_report_${today}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                console.log('Download triggered successfully');
+                if (typeof updateRefreshStatus === 'function') {
+                    updateRefreshStatus('Report downloaded successfully!');
+                }
+            } catch (error) {
+                console.error('Error downloading report:', error);
+                alert(`Failed to download sales report: ${error.message}\n\nPlease check the browser console for details.`);
+            }
+        }
     </script>
 </body>
 

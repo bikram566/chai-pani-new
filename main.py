@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import init_db
-from routes import auth, menu, inventory, tables, orders, kot, kds
+from routes import auth, menu, inventory, tables, orders, kot, kds, sales
 
 # Initialize Database
 init_db()
@@ -26,6 +26,7 @@ app.include_router(tables.router)
 app.include_router(orders.router)
 app.include_router(kot.router)
 app.include_router(kds.router)
+app.include_router(sales.router)
 
 # Mount static files for frontend
 app.mount("/", StaticFiles(directory="public", html=True), name="public")

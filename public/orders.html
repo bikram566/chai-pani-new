@@ -41,56 +41,76 @@
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="nav-brand"><a href="dashboard.html">Chai-Pani</a> / Orders</div>
-        <div class="nav-links">
-            <a href="dashboard.html" class="nav-link">Dashboard</a>
-            <a href="#" onclick="logout()" class="nav-link">Logout</a>
-        </div>
-    </nav>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">Chai-Pani</div>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="menu.html">Menu</a></li>
+                <li><a href="tables.html">Tables</a></li>
+                <li><a href="orders.html" class="active">Orders</a></li>
+                <li><a href="kitchen.html">Kitchen (KOT)</a></li>
+                <li><a href="inventory.html">Inventory</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </nav>
 
-    <div class="container">
-        <div class="grid" style="grid-template-columns: 2fr 1fr;">
-            <!-- Menu Section -->
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <h1>Menu</h1>
-                    <select id="category-filter" onchange="filterMenu()" style="width: 200px;">
-                        <option value="">All Categories</option>
-                        <!-- Categories populated via JS -->
-                    </select>
-                </div>
-
-                <div class="grid grid-3" id="menu-grid">
-                    <!-- Menu items loaded here -->
-                </div>
-            </div>
-
-            <!-- Cart/Order Section -->
-            <div class="card cart-panel">
-                <h2 class="mb-2">Current Order</h2>
-
-                <div class="form-group">
-                    <label>Table</label>
-                    <select id="table-select">
-                        <option value="">Select Table</option>
-                        <!-- Tables populated via JS -->
-                    </select>
-                </div>
-
-                <div class="cart-items" id="cart-items">
-                    <p class="text-muted text-center mt-2">Cart is empty</p>
-                </div>
-
-                <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
-                    <div class="flex justify-between mb-1">
-                        <span>Total:</span>
-                        <span id="cart-total" style="font-weight: bold; font-size: 1.2rem;">₹0.00</span>
+        <main class="content">
+            <div class="grid" style="grid-template-columns: 2fr 1fr;">
+                <!-- Menu Section -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h1>Menu</h1>
+                        <select id="category-filter" onchange="filterMenu()" style="width: 200px;">
+                            <option value="">All Categories</option>
+                            <!-- Categories populated via JS -->
+                        </select>
                     </div>
-                    <button class="btn btn-primary" style="width: 100%;" onclick="placeOrder()">Place Order</button>
+
+                    <div class="grid grid-3" id="menu-grid">
+                        <!-- Menu items loaded here -->
+                    </div>
+                </div>
+
+                <!-- Cart/Order Section -->
+                <div class="card cart-panel">
+                    <div id="running-order-section"
+                        style="display: none; border-bottom: 2px dashed var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">
+                        <h2 class="mb-2" style="color: var(--warning-color);">Running Order</h2>
+                        <div class="cart-items" id="running-items" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Running items loaded here -->
+                        </div>
+                        <div class="flex justify-between mt-2" style="font-weight: bold;">
+                            <span>Running Total:</span>
+                            <span id="running-total">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <h2 class="mb-2">Current Order</h2>
+
+                    <div class="form-group">
+                        <label>Table</label>
+                        <select id="table-select">
+                            <option value="">Select Table</option>
+                            <!-- Tables populated via JS -->
+                        </select>
+                    </div>
+
+                    <div class="cart-items" id="cart-items">
+                        <p class="text-muted text-center mt-2">Cart is empty</p>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <div class="flex justify-between mb-1">
+                            <span>Total:</span>
+                            <span id="cart-total" style="font-weight: bold; font-size: 1.2rem;">₹0.00</span>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%;" onclick="placeOrder()">Place Order</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script src="app.js"></script>
@@ -98,6 +118,7 @@
         let menuItems = [];
         let cart = [];
         let tables = [];
+        let currentTableId = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
@@ -108,8 +129,81 @@
             const tableId = urlParams.get('table');
             if (tableId) {
                 document.getElementById('table-select').value = tableId;
+                handleTableChange();
             }
+
+            // Add change listener
+            document.getElementById('table-select').addEventListener('change', handleTableChange);
         });
+
+        async function handleTableChange() {
+            const tableId = document.getElementById('table-select').value;
+            currentTableId = tableId;
+
+            // Reset UI
+            document.getElementById('running-order-section').style.display = 'none';
+            document.getElementById('running-items').innerHTML = '';
+            const placeOrderBtn = document.querySelector('button[onclick="placeOrder()"]');
+            placeOrderBtn.textContent = 'Place Order';
+            placeOrderBtn.classList.remove('btn-warning');
+            placeOrderBtn.classList.add('btn-primary');
+
+            if (!tableId) return;
+
+            // Find table info
+            const table = tables.find(t => t.id == tableId);
+            if (table && table.status === 'occupied' && table.current_order_id) {
+                // Fetch existing order
+                await loadRunningOrder(table.current_order_id);
+
+                // Update UI for append mode
+                placeOrderBtn.textContent = 'Add to Order';
+                placeOrderBtn.classList.remove('btn-primary');
+                placeOrderBtn.classList.add('btn-warning');
+            }
+        }
+
+        async function loadRunningOrder(orderId) {
+            try {
+                const response = await fetchAPI(`/orders/${orderId}`);
+                if (!response) return;
+
+                const order = await response.json();
+                const container = document.getElementById('running-items');
+                const section = document.getElementById('running-order-section');
+
+                if (order.detailed_items && order.detailed_items.length > 0) {
+                    section.style.display = 'block';
+                    container.innerHTML = '';
+
+                    order.detailed_items.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'cart-item';
+                        div.style.backgroundColor = '#f9f9f9';
+
+                        let statusColor = '#666';
+                        if (item.status === 'completed') statusColor = 'var(--success-color)';
+                        if (item.status === 'preparing') statusColor = 'var(--warning-color)';
+
+                        div.innerHTML = `
+                            <div>
+                                <div style="font-weight: bold;">${item.name}</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">${formatCurrency(item.price)} x ${item.quantity}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: bold;">${formatCurrency(item.price * item.quantity)}</div>
+                                <div style="font-size: 0.7rem; color: ${statusColor}; text-transform: uppercase;">${item.status}</div>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+
+                    document.getElementById('running-total').textContent = formatCurrency(order.total_amount);
+                }
+            } catch (error) {
+                console.error('Error loading running order:', error);
+            }
+        }
 
         async function loadMenu() {
             const response = await fetchAPI('/menu/?available_only=true');
@@ -252,12 +346,23 @@
             });
 
             if (response && response.ok) {
-                alert('Order placed successfully!');
+                const result = await response.json();
+                console.log('Order placed result:', result); // DEBUG
+                alert(result.message || 'Order placed successfully!');
                 cart = [];
                 renderCart();
-                // Optionally redirect to dashboard or clear selection
-                window.location.href = 'dashboard.html';
+
+                if (result.appended) {
+                    console.log('Order appended, refreshing table...'); // DEBUG
+                    // If appended, stay on page and refresh running order
+                    handleTableChange();
+                } else {
+                    console.log('New order, redirecting...'); // DEBUG
+                    // If new order, redirect to dashboard
+                    window.location.href = 'dashboard.html';
+                }
             } else {
+                console.error('Failed to place order'); // DEBUG
                 alert('Failed to place order');
             }
         }
