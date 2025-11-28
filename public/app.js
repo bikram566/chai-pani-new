@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8001/api';
+const API_URL = 'https://chai-pani-new.onrender.com/api';
 
 // Auth State
 let currentUser = null;
