@@ -30,14 +30,16 @@ async function fetchAPI(endpoint, options = {}) {
 
 // Auth Functions
 async function login(username, password) {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-
+    const formData = new URLSearchParams();
+    formData.append("username", username);
+    formData.append("password", password);
     try {
         const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+  }
         });
 
         if (!response.ok) {
