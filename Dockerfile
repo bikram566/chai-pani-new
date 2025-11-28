@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-# Install system deps required for bcrypt/passlib
+# Install bcrypt/passlib required libs
 RUN apt-get update && apt-get install -y \
     build-essential \
     libffi-dev \
@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
